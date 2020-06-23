@@ -170,5 +170,92 @@ var ellipse = svg.append("ellipse")
 var data = [25,20,10,12,15];
 
 var svg = d3.select("#chart-area").append("svg")
+    .attr("width",400)
+    .attr("height",400);
     
+/* we select all circles on screen and associate them with the data array using .data*/
+var circles = svg.selectAll("circle")
+    .data(data);
+    
+circles.enter()
+    .append("circle")
+        .attr("cx",200)
+        .attr("cy",200)
+        .attr("r",100)
+        .attr("fill","red");
 ```
+* in the code above we select all circles on screen and associate them with the data array using `.data()`
+* the `data()` method can be used even if the circles are not yet drawn on screen
+* we use `.enter()` async to enter and draw the actual circles
+* the result of hte 2 method combo is that we get a new circle for each array element
+* we showcase the async behaviour by passing in callbacks which get called for each array element
+```
+circles.enter()
+    .append("circle")
+        .attr("cx",(d,i)=>{
+            console.log(`Item: ${d},Index: ${i}`);
+            return (i*50)+25;
+        })
+        .attr("cy",200)
+        .attr("r",d=>{
+            console.log(`Item: ${d}`);
+            return 25;
+        })
+        .attr("fill","red");
+```
+* we can use the callbacks to pass as attribute array elements
+
+### Lecture 14. Loading external data
+
+* Loading external data from CSV,TSV, JSON files
+* Using map functions to format our raw text data
+* Setting attributes of our SVGs with anonymous functions
+* load from CSV `d3.csv("data/ages.csv").then((data)=>{})`
+* load from TSV `d3.tsv("data/ages.tsv").then((data)=>{})`
+* load from JSON `d3.json("data/ages.json").then((data)=>{})`
+* D3 v5 uses promises
+* we alter the previous code to use the csv data
+```
+d3.csv("data/ages/csv").then((data)=>{
+   console.log(data); 
+   data.forEach(d=>{
+       d.age = +d.age;
+   });
+   
+   var svg = d3.select("#chart-area").append("svg")
+    .attr("width",400)
+    .attr("height",400);
+    
+    var circles = svg.selectAll("circle")
+        .data(data);
+        
+    circles.enter()
+        .append("circle")
+            .attr("cx",(d,i)=>{
+                console.log(`Item: ${d},Index: ${i}`);
+                return (i*50)+25;
+            })
+            .attr("cy",200)
+            .attr("r",d=>{
+                console.log(`Item: ${d}`);
+                return d.age +2;
+            })
+            .attr("fill",d=>{
+                if(d.name=="Tony"){
+                    return "blue";
+                }
+                return "red";
+            });
+}).catch(err=>{
+    console.log(err);
+});
+```
+* load data methods return JS objects
+
+### Lecture 15. Activity: Your first visualization!
+
+* Use D3 to read in the data from the buildings.json  file into your main.js  file. Log the data out to your console, and take a look at the format of your array.
+* Write a forEach() loop for your data array to convert the height values from strings to numbers.
+* Add an SVG to the #chart-area  div in the index.html file. Give it a width of 500px and a height of 500px.
+* Use a data join to add a rectangle for each building in the dataset to your SVG.
+* Stagger the rectangles by their x-coordinates, and make their heights equal to the “height” values from your JSON file.
