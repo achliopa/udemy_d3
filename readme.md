@@ -379,3 +379,118 @@ var x = d3.scaleBand()
 console.log(x("S.AMERICA")); // 209 = "x" position
 console.log(x.bandwidth()); // 45.9 = "width"
 ```
+
+### Lecture 23. D3 min, max, and extent
+
+* we need to set the domains of the scales automatically baed on the data we are looking at
+    * using the d3.min(),d3.max() d3.extent()
+    * using mapping functions to provide an array of category names to ordinal/band scales
+* we need adaptive domains to data
+* we use callbacks to get the data from dataset and se the vals
+```
+var data = [
+    { grade: "A", value: 4 },
+    { grade: "B", value: 3 },
+    { grade: "C", value: 2 }
+];
+
+var min = d3.min(data,d=>d.value);
+console.log(min); // 2
+var max = d3.max(data,d=>d.value);
+console.log(max); // 4
+var val_extent = d3.extent(data,d=>d.value);
+console.log(val_extent) // [2,4]
+var grade_map = data.map(d=>d.grade);
+console.log(grade_map) // ["A","B","C"]
+```
+* a real example of building a bar chart
+```
+var y = d3.scaleLinear()
+    .domain([
+        d3.min(data,d=>d.value),
+        d3.max(data,d=>d.value)
+    ])
+    .range([0,400]);
+
+var y = d3.scaleLinear()
+    .domain([d3.extent(data,d=>d.value)])
+    .range([0,400]);
+
+var x = d3.scaleBand()
+    .domain(data.map(d=>d.grade))
+    .range([0,400])
+    .paddingInner(0.3)
+    .paddingInner(0.3);
+```
+* with this approach we dont have to hardcode domain params.
+
+### Lecture 24. Margins and groups
+
+* SVG goups are used to structure elements together on page
+* we can use transformations to alter SVG position
+* we folow the D3 margin convention to give us space for the axes
+* SVG Groups `<g transform="translate(200,0)"></g>`
+    * invisible containers for structuring SVGs
+    * with transmation attributes for moving multiple SVGs at once
+* we put shapes in groups by wrapping them in their tags
+* a standard setup for svg camvas
+```
+var margin = {top: 20, right: 10, bottom: 20, left: 10};
+var width = 960 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
+var g = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.left)
+    .attr("height", width + margin.top + margin.bottom)
+.append("g")
+    * attr("transform",`translate(${margin.left},${margin.top})`);
+```
+* we use the transform to move our shapes in the margin frame to give space for axes
+
+### Lecture 25. Axes and labels
+
+* we ll use axis generators in our bar chart to show the scale
+* also axis labels to tell what we look at
+* left axis
+```
+var leftAxis = d3.axisLeft(<Y-SCALE>);
+g.append("g")
+    .attr("class","left axis")
+    .call(leftAxis)
+```
+* topAxis
+```
+var topAxis = d3.axisTop(<X-SCALE>);
+g.append("g")
+    .attr("class","top axis")
+    .call(topAxis)
+```
+* right axis
+```
+var rightAxis = d3.axisRight(<Y-SCALE>);
+g.append("g")
+    .attr("class","right axis")
+    .attr("transform",`translate(${width},0)`)
+    .call(rightAxis)
+```
+* bottomAxis
+```
+var topAxis = d3.axisBottom(<X-SCALE>);
+g.append("g")
+    .attr("class","bottom axis")
+    .attr("transform",`translate(0,${height})`)
+    .call(bottomAxis)
+```
+* axis re rendered related to the canvas origin
+* we can size and space the axis ticks
+```
+d3.axisBottom(x)
+    .tickSizeOuter(<VALUE>) /* outer ticks vertical size */
+    .tickSizeInner(<VALUE>) /* inner ticks vertical size */
+    .tickSize(<VALUE>) /* ALL ticks vertical size. it overrides the above methods*/
+```
+* how many ticks to draw??? `.ticks(<VALUE>)`
+* to format text we can use d3.format() or custom callaback
+```
+d3.axisBottom(x)
+    .tickFormat(d3.format(""))
+```
