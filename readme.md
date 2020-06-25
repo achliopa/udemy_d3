@@ -492,5 +492,322 @@ d3.axisBottom(x)
 * to format text we can use d3.format() or custom callaback
 ```
 d3.axisBottom(x)
-    .tickFormat(d3.format(""))
+    .tickFormat(d3.format(",.0f"));
+
+d3.axisBottom(x)
+    .tickFormat(d=><TICK TEXT>);
 ```
+* we can explicitly pass in tick values (we can use map on dataset if needed)
+```
+d3.axisBottom(x)
+    .tickValues([1,2,3,4,5,6,11,12]);
+```
+* we use groups to apply transformation on axis for correct placement
+* real life example
+```
+var xAxisCall = d3.axisBottom(x);
+g.append("g")
+    .attr("class","x axis")
+    .attr("transform",`translate(0,${height})`)
+    .call(xAxisCall)
+    .selectAll("text")
+        .attr("y","10")
+        .attr("x","-5")
+        .attr("text-anchor","end")
+        .attr("transform","rotate(-40)")
+        
+var yAxisCall = d3.axisLeft(y)
+    .ticks(3)
+    .tickFormat(d=>d+"m");
+g.appeng("g")
+    .attr("class","y axis")
+    .call(yAxisCall);
+```
+* to add a label on X axis
+```
+g.append("text")
+    .attr("class","x axis-label")
+    .attr("x", width/2)
+    .attr("y", height * 140)
+    .attr("font-size","20px")
+    .attr("text-anchor","middle")
+    .text("The world's tallest buildings")
+```
+* for a Y axis label we do the same bt apply rotate transformation also we swap x and y position
+
+### Lecture 26. Making a bar chart
+
+* we need to reverse the y-scale so that y axis works ok (bottom up bars)
+* we need to mess with SVG coord system
+* to revers a scale we need to pass a range as [MAX,MIN] and not [MIN,MAX]
+* this does not cut it. bars will float in canvas. its fucked up. 
+* what we want is the Total height - the reverse y-scale
+* still we have a problem. bars hang on top. we need to translate them by y(d.heiht) (reverse yscale)
+```
+var y = d3.scaleLiear()
+    .domain(0,d3.max(data,d=>d.height))
+    .range([height,0]);
+```
+* when we draw them
+```
+rects.enter()
+    .append("rect")
+        .attr("y",d=>y(d.height))
+        .attr("x",d=>x(d.name))
+        .attr("width",x.bandwidth)
+        .attr("height",d=> height - y(d.height))
+        .attr("fill","gray");
+```
+
+### Lecture 27. Project 1: StarBreak Coffee
+
+* plot sales data as bar chart
+* anchor svg in #chart-area id
+* data in JSON
+
+### Lecture 28. Activity: Project 1
+
+* For any project in D3, it makes sense to “Divide and Conquer” a complex task like this into manageable chunks. 
+* Follow along with these instructions, and make sure that you understand how each step works:
+    * Load the data into your main.js  file using the d3.csv()  function. Make sure that you format the data, so that you can work with values as integers. Make a console log so that you can see the output of the data in the browser.
+    * Add an SVG canvas to the #chart-area  div element with a width of 600px and a height of 400px. Add a group for our SVG elements, and define some suitable margins for an x and y axis.
+    * Create the scales for our visualization. The x-axis should be an band scale, whilst our y-axis will be a linear scale.
+    * Using D3 selectAll with the data, enter, and append methods, add a rectangle for each month of data that we have. 
+    * Scale the rectangles to have the correct width and height. Choose the right y-values so that they sit at the bottom of the visualization area.
+    * Add in axes and labels, so that we can tell what the visualization is showing us.
+* solution
+```
+var canvasWidth = 600;
+var canvasHeight = 400;
+var margin = { left: 100, right: 10, top: 10, bottom: 100 };
+var width = canvasWidth - margin.left - margin.right;
+var height = canvasHeight - margin.top - margin.bottom;
+var g = d3.select("#chart-area")
+    .append("svg")
+        .attr("width",canvasWidth)
+        .attr("height",canvasHeight)
+    .append("g")
+        .attr("transform",`translate(${margin.left},${margin.top})`);
+        
+// X label
+g.append("text")
+    .attr("class","x axis-lable")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom)
+    .attr("font-size","20px")
+    .attr("text-anchor","middle")
+    .text("Month");
+
+// Y Label
+g.append("text")
+    .attr("class","y axis-label")
+    .attr("x", -(height/2))
+    .attr("y", - (margin.left - 20))
+    .attr("font-size","20px")
+    .attr("text-anchor","middle")
+    .attr("transform","rotate(-90)")
+    .text("Revenue");
+
+d3.json("data/revenues.json").then(data=>{
+    console.log(data);
+    data.forEach(d=>{
+       d.revenue = +d.revenue;
+    });
+    
+    var x = d3.scaleBand()
+        .domain(data.map(d=>d.month))
+        .range([0,width])
+        .paddingInner(0.3)
+        .paddingOuter(0.3);
+    
+    var y = d3.scaleLinear()
+        .domain([0,d3.max(data,d=>d.revenue)])
+        .range([height,0]);
+        
+    var rects = g.selectAll("rect")
+        .data(data);
+    
+    var xAxisCall = d3.axisBottom(x);
+    g.append("g")
+        .attr("class","x axis")
+        .attr("transform",`translate(0,${height})`)
+        .call(xAxisCall);
+    
+    var yAxisCall = d3.axisLeft(y)
+        .ticks(10)
+        .tickFormat(d=>`$${d}`);
+    g.append("g")
+        .attr("class","y-axis")
+        .call(yAxisCall);
+    
+    rects.enter()
+        .append("rect")
+        .attr("y",d=>y(d.revenue))
+        .attr("x",d=>x(d.month))
+        .attr("width",x.bandwidth)
+        .attr("height",d=>(height-y(d.revenue)))
+        .attr("fill","grey");
+});
+```
+
+## Section 4: The basics of design
+
+### Lecture 31. Designing for clarity
+
+* make the data easy to interpret
+* build credible visualization
+* keep focus on important factors
+* Tufte design principles
+    * graphical integrity => scale limits
+    * lie factor => tilted graphics
+    * chart junk => distraction by elements not adding info
+    * data-to-ink ratio => the larger the better
+
+### Lecture 32. Subjectivity in design
+
+* Goals
+    * grab users attention
+    * encourage exploration
+    * build new interesting types of visualizations
+* Infographics are fun
+
+### Lecture 33. Activity: Critiquing visualizations
+
+* [coffe infographic](https://i.udemycdn.com/redactor/raw/2018-02-20_16-04-31-62ceea612d647cb38fbdfdb8da3f8f72.png)
+* [bingo infographic](https://i.udemycdn.com/redactor/raw/2018-02-20_16-05-28-808acf3e35db9dd4b7b293514e7b8942.jpg)
+* [hiphop word usage](https://pudding.cool/projects/vocabulary/)
+
+### Lecture 34. The design toolkit
+
+* Design channels
+    * position
+    * size
+    * value
+    * texture
+    * color
+    * orientation
+    * shape
+* shapes: points,lines,areas
+* some channels are more intuitive than others
+* pick right channel for right type of data
+* data categories
+    * quantitative (numerical) : position => length => slope angle
+    * categorical (categories) : area => intensity
+    * ordinal (rankings) = categorical with order : color , shape
+* dont use more than 5-8 colrs
+* dont use diverging color scale for quantitative data
+* consider color blind users
+* [colorbrewer](https://colorbrewer2.org) a tool to select color schemes
+
+### Lecture 35. An introduction to sketching
+
+* wireframe site before programming it
+* think various options to communicate data
+* use wireframes to talk to clients or peers
+* Rules of sketching
+    * use paper
+    * sketch big (A% or larger)
+    * go for general points dont bother with details
+* use pen and paper
+* sunburst plot for popultation: continent => country => region (GDP as intensity)
+* legend
+
+### Lecture 37. The Bootstrap grid system
+
+* everything needs to be surrounded by a div with a "container" class
+* use div with "row" class for rows
+* BS supports an 12 column grid use divs with class "col-md-X" where X = 1 to 12
+* if adding cols results with >12 BS will wrap the cols
+* we can use class"col-xs-" for phones "col-sm-" for tablets "col-md-" for desktop screens "con-lg-" for large screens
+* with "col-md-4" "col-offset-3" we add 3 coll padding before collumn of size 4
+
+## Section 5: Make it dynamic
+
+### Lecture 40. Looping with intervals
+
+* we will use intervals to add loops in the code (async)
+* interval() is a d3 method (like setInterval) `d3.interval(()=>{},500)`
+* vanilla JS equivalent
+```
+var myInterval = setInterval(()=>{},500);
+clearInterval(myInterval);
+```
+* do sthing in the callback (periodically)
+
+### Lecture 41. Adding an update function
+
+* we will structure the updates with an update function we call in the loop
+* scales and axes need to change if data changes
+* if axes and scales change we need to reposition our shapes
+* sample update method
+```
+const update = (data) => {
+    x.domain(data.map(d=>d.month));
+    y.domain([0,d3.max(data,d=>d.revenue)]);
+
+    var xAxisCall = d3.axisBottom(x);
+    g.append("g")
+        .attr("class","x axis")
+        .attr("transform",`translate(0,${height})`)
+        .call(xAxisCall);
+    
+    var yAxisCall = d3.axisLeft(y)
+        .ticks(10)
+        .tickFormat(d=>`$${d}`);
+    g.append("g")
+        .attr("class","y-axis")
+        .call(yAxisCall);
+    
+};
+```
+* we need to update the domain as new revenues will come
+* the code above is wrong as we keep drawing axes on top of each other on each update
+* this is because we append a new group each time the code runs
+* we append the crop externally and just mod the atributes
+* we just run the call methods in the update method
+* anothe rissue is that we have no acces in first interval till callback fires. to fix it we call teh update outside the interval once
+
+### Lecture 42. The D3 update pattern
+
+* update pattern is one of the hardest patterns in D3.
+* we will edit the size and position of our rectangles in theupdate method
+* to understand the update pattern remeber the data join pattern we used to pass data in the shapes
+* it was async..
+* when we bind the data to the rect tags (not wet drawn) we see that d3 attaches 3 fields
+    * _enter
+    * _exit
+    * _groups
+```
+var rects = g.selectAll("rect")
+    .data(data);
+console.log(rects);
+```
+* _enter represents all elemets in the data array not yet appearing ion page (need to be added)
+* _exit contains all elements on page that d not wexist in the data array (need be removed)
+* _groups contains all elements currently on screen
+* if we run `rects.enter()...` the elements move from _enter to _groups
+* The D3 Update Pattern
+    * Data Join - select all matching elements on the screen with selectAll, and update the data we use
+```
+var text = g.selectAll("text")
+    .data(data);
+```
+    * Exit - use the exit() selector to remove the elements that dont exist in our new array of data `text.exit().remove()`
+    * Update - set attributes for existing elements on the screen
+```
+text.attr("class","update")
+    .attr("fill","red");
+```
+    * Enter - use the enter() selector to set attributes for new items in our data array
+```
+text.enter().append("text")
+    .attr("class","enter")
+    .attr("x",(d,i)=>i*32)
+    .attr("y",20)
+    .attr("fill","green")
+    .text(d=>d);
+```
+
+### Lecture 43. Making our chart dynamic
+
+* 

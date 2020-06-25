@@ -21,7 +21,7 @@ var g = d3.select("#chart-area")
 g.append("text")
     .attr("class", "x axis-label")
     .attr("x", width / 2)
-    .attr("y", height + 140)
+    .attr("y", height / 2)
     .attr("font-size", "20px")
     .attr("text-anchor", "middle")
     .text("The word's tallest buildings");
