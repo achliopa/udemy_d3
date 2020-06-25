@@ -810,4 +810,263 @@ text.enter().append("text")
 
 ### Lecture 43. Making our chart dynamic
 
+* we ll make our data flick between various sources and move the update method in the d3.interval()
+* we ll move between profit and revenue
+* we ll use a global flag to choose between revenue or profit
+* we use ES2015 interpolation passing object attribute name as var
+```
+var value = flag ? "revenue":"profit";
+y.domain([0,d3.max(data,d=>d[value])])
+```
+
+### Lecture 44. D3 Transitions
+
+* transitions add smoothness to updates
+* to add transition in the enter() where we add components we pass it with attributes
+```
+rects.enter().append("rect")
+    .attr("height",d=>(height-y(d.revenue)))
+    .attr("x",d=>x(d.month))
+    .attr("width",x.bandwidth)
+    .attr("fill","gray")
+    .attr("y",y(0))
+    .attr("fill-opacity",0)
+    .transition(d3.transition().duration(500))
+        .attr("y",d=>y(d[value]))
+        .attr("fill-opacity",1);
+```
+* atrs applied before transition are applied instantly
+* attrs applied after transition are applied gradually
+* we define the transition as a global var `var t = d3.transition().duration(750);`
+* to add transition to elements (axis) we put the call before the call method `xAxisGroup.transition(t).call(xAxisCall);`
+* we use transition even on exit
+* we can use d3.merge() to pass in attribute of enter and update togeteher and keep code DRY
+* we use merge after ener and pass in the selection we want to merge it with (eg the rects that is the update selection)
+* everything before the merge() is applied in enter() selection
+* everything after .merge() is applied on both selections (enter and update in our case)
+* we slice the array to remove an element to showcase exit
+* we can miss the order. we better pass a callback in .data() join as second arg to pass in keys to associate to data elements
+```
+.data(data,d=>d.month)
+```
+
+### Lecture 45. Scatter plots in D3
+
+* to convert a bar chart to a scatter plot
+    * switch rectangles to circles
+    * x to cx
+    * get rid of width
+    * fixed radius
+    * convert height to cy
+* for correct placement on ticks add half badwidth to cx
+* for bubble chart make radius proportional to rect height
+```
+var rects  = g.selectAll("circle")
+    .data(data,d=>d.month);
+rects.exit()
+    .attr("fill","red")
+.transition(t)
+    .attr("cy",y(0))
+    .remove();
+
+rects.enter()
+    .append("circle")
+        .attr("fill","gray")
+        .attr("cy",y(0))
+        .attr("cx",d=>(x(d.month+x.vandwidth()/2))
+        .attr("r",5)
+        .merge(rects)
+        .transition(t)
+            .attr("cx",d=>(x(d.month+x.vandwidth()/2))
+            .attr("cy",d=>y(d[value]))
+```
+
+### Lecture 46. Project 2: Gapminder Clone
+
+* bubble chart to show how population per capita and life expectancy have changed in different countries over the past 2 centuries
+* we have an array of objects for each continent and year
+* ordinal and log scale is used
+
+### Lecture 47. Activity: Project 2
+
+* Take a look at the data that we're working with in your browser console. If there are any null values for one of the countries in one of the years, use a filter on the array to exclude that country-year data point from the dataset.
+* Make a static scatter plot for the first year in our data.
+    * Set up some sensible dimensions for your visualization, and make it conform to the D3 margin convention.
+    * Write scales for each axis (GDP-per-capita on the x-axis, life expectancy on the y-axis)
+        * Suggested domains: x – [300, 150000] ; y – [0, 90] .
+        * The x scale should be a logarithmic scale.
+    * Append both axes with D3's axis generators.
+        * Use TickValues() to manually set our x-axis values of 400, 4,000, and 40,000.
+    * Append circles for each country in one year (e.g. the first year of our data)
+* Write an update()  function that makes use of the JOIN/EXIT/UPDATE/ENTER pattern discussed in this section.
+    * The data join needs to contain a key function linking it to individual countries, or else it won’t work.
+    * Put a transition on the update function of 100ms (it can’t be larger than the d3.interval time).
+* Add a loop with d3.interval() , calling the update()  function on each iteration of the loop.
+    * On each run of the update()  function, you should be passing in a different array of countries.
+    * The visualization should go from 1800 to 2015, then reset itself – how could you achieve this with something like our “flag” variable?
+* Change the radius dynamically so that it represents the population of the given country in a given year.
+    * You’ll need to use another scale for this (the range should be [5, 25]).
+    * Make sure to associate population with the area, rather than the radius of the circle! You might need to play around with this scale to find the right transformation to use. (Hint: Area = PI * Radius^2)
+* Change the fill of the circles to associate them to their continent.
+    * You’ll need to write an ordinal scale to do this. Use one of the D3 color schemes to make things simpler.
+* Add axis labels to the x and y axis, and a year marker that updates with every run of the update loop.
+```
+var margin = { left: 80, right: 20, top: 50, bottom: 100 };
+var height = 500 - margin.top - margin.bottom,
+	width = 800 - margin.left - margin.right;
+
+var g = d3.select("#chart-area")
+	.append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + margin.left +
+		", " + margin.top + ")");
+
+var time = 0;
+
+// Scales
+var x = d3.scaleLog()
+	.base(10)
+	.range([0, width])
+	.domain([142, 150000]);
+var y = d3.scaleLinear()
+	.range([height, 0])
+	.domain([0, 90]);
+var area = d3.scaleLinear()
+	.range([25 * Math.PI, 1500 * Math.PI])
+	.domain([2000, 1400000000]);
+var continentColor = d3.scaleOrdinal(d3.schemePastel1);
+
+// Labels
+var xLabel = g.append("text")
+	.attr("y", height + 50)
+	.attr("x", width / 2)
+	.attr("font-size", "20px")
+	.attr("text-anchor", "middle")
+	.text("GDP Per Capita ($)");
+var yLabel = g.append("text")
+	.attr("transform", "rotate(-90)")
+	.attr("y", -40)
+	.attr("x", -170)
+	.attr("font-size", "20px")
+	.attr("text-anchor", "middle")
+	.text("Life Expectancy (Years)")
+var timeLabel = g.append("text")
+	.attr("y", height - 10)
+	.attr("x", width - 40)
+	.attr("font-size", "40px")
+	.attr("opacity", "0.4")
+	.attr("text-anchor", "middle")
+	.text("1800");
+
+// X Axis
+var xAxisCall = d3.axisBottom(x)
+	.tickValues([400, 4000, 40000])
+	.tickFormat(d3.format("$"));
+g.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(0," + height + ")")
+	.call(xAxisCall);
+
+// Y Axis
+var yAxisCall = d3.axisLeft(y)
+	.tickFormat(function (d) { return +d; });
+g.append("g")
+	.attr("class", "y axis")
+	.call(yAxisCall);
+
+d3.json("data/data.json").then(function (data) {
+	console.log(data);
+
+	// Clean data
+	const formattedData = data.map(function (year) {
+		return year["countries"].filter(function (country) {
+			var dataExists = (country.income && country.life_exp);
+			return dataExists
+		}).map(function (country) {
+			country.income = +country.income;
+			country.life_exp = +country.life_exp;
+			return country;
+		})
+	});
+
+	// Run the code every 0.1 second
+	d3.interval(function () {
+		// At the end of our data, loop back
+		time = (time < 214) ? time + 1 : 0
+		update(formattedData[time]);
+	}, 100);
+
+	// First run of the visualization
+	update(formattedData[0]);
+
+})
+
+function update(data) {
+	// Standard transition time for the visualization
+	var t = d3.transition()
+		.duration(100);
+
+	// JOIN new data with old elements.
+	var circles = g.selectAll("circle").data(data, function (d) {
+		return d.country;
+	});
+
+	// EXIT old elements not present in new data.
+	circles.exit()
+		.attr("class", "exit")
+		.remove();
+
+	// ENTER new elements present in new data.
+	circles.enter()
+		.append("circle")
+		.attr("class", "enter")
+		.attr("fill", function (d) { return continentColor(d.continent); })
+		.merge(circles)
+		.transition(t)
+		.attr("cy", function (d) { return y(d.life_exp); })
+		.attr("cx", function (d) { return x(d.income) })
+		.attr("r", function (d) { return Math.sqrt(area(d.population) / Math.PI) });
+
+	// Update the time label
+	timeLabel.text(+(time + 1800))
+}
+```
+
+## Section 6: Make it interactive
+
+### Lecture 50. Adding a legend
+
+* we add a group for the whole legend, a group to contain the legend rows
+* we hardcode the continets as array of strings
+* we shift the legent with transaltion to the bottom right corner 
+* we use forEach to iterate and add rows
+```
+var continents = ["europe","asia","americas","africa"]];
+
+var legend = g.append("g")
+    .attr("transform",`translate(${width-10},${height-125})`);
+
+continents.forEach((continent,i)=>{
+    var legendRow = legend.append("g")
+        .attr("transform",`translate(0,${i+20})`);
+    legendRow.append("rect")
+        .attr("width",10)
+        .attr("height",10)
+        .attr("fill",conetinentColor(continent));
+    
+    legendRow.append("text")
+        .attr("x", -10)
+        .attr("y", 10)
+        .attr("text-anchor","end")
+        .style("text-transform","capitalize")
+        .text(continent);
+});
+```
+* styles is for CSS attributes
+* attr might be CSS attribute but maybe not
+
+### Lecture 51. Formatting and parsing in D3
+
 * 
