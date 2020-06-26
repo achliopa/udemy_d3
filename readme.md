@@ -1069,4 +1069,68 @@ continents.forEach((continent,i)=>{
 
 ### Lecture 51. Formatting and parsing in D3
 
-* 
+* D3 Format for number formats
+* Using how to use sting specifier strings in Format to format hard to read numbers
+* D3 TimeFormat and TimeParse to convert dates between strings and JS Date obj
+```
+d3.format(".0%")(0.1233); // rounded percentage, "12%"
+d3.format("($.2f)")(-3.5); // localized fixed point currency "Ε3.50"
+d3.format("+10")(42); // space-filled and signed, "          +42"
+d3.format(".^10")(42); // dote-filled and centered, "....42...."
+d3.format(".2s")(42e6); // SI-prefix with 2 significant digits, "42M"
+d3.format("#x")(48879); // prefixed lowercase hexadecimal, "0xbeef"
+d3.format(",.2r")(4200); // grouped thousands with 2 significant digits, "4,200"
+```
+* reusable formatter
+```
+var formatter = d3.format(".2f");
+formatter(1000); // 1000.00
+```
+* to build a format specifier `d3.format(specifier)`we need to use correct syntax and order
+* sign, symbol,comma,precision, type
+* all fields are optional 
+* syntax `[[fill]align][sign][symbol][0][width][,][.precision][type]`
+* sign can be
+    * - : nothing for zero or positive and a minus sign for negative (default)
+    * + : a plus sign for zero or positive and minus for negative
+    * ( : nothing for zero or positive, minus and parenthesis for negative
+    *   : (space) for  zero or positive minus for negative
+* symbol can be:
+    * $ : local currency symbol per locale
+    * #X : #b for binary, #o octal or #x hex. use X for capital hex
+* adding a , adds thousands group separator
+* .precision : a number following a decimal point signals num of decimal digits
+* for types consul docs
+* d3.timeFormat() and d3.timeParse() also needs a parser string
+* Formatting: Date obj => String
+```
+var formatTime = d3.timeFormat("%B %d, %Y");
+formatTime(new Date); // "June 30, 2015"
+```
+* Parsing: String => Date Object
+```
+var parseTime = d3.timeParse("%B %d, %Y");
+parseTime("June 30, 2015"); // Tue Jun 30 2015 00:00:00 GMT-0700 (PDT)
+```
+* for formatting options check the docs
+
+### Lecture 52. Introducing Tooltips
+
+* adding tooltips to let user see data a SVG represents
+* using the first plugin to powerup d3 (d3-tip)
+* use d3 formatting to render text
+* step1 : initialize the tooltip `tip = d3.tip().attr('class','d3-tip').html(d=>d);`
+* step 2 : calling the tip in the context of the visualization `vis.call(tip)`
+* step 3 : add event listeners
+```
+vis.selectAll('rect')
+    .data(data)
+    .enter()
+    .append('rect')
+    .attr('width',()=>x.rangeBand())
+    .attr('height',d=>(h-y(d)))
+    .attr('y',d=>y(d))
+    .attr('x',(d,i)=>x(i))
+    .on('mouseover',tip.show)
+    .on('mouseout',tip.hide)
+```
